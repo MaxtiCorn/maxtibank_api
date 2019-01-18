@@ -75,7 +75,8 @@ app.get('/getOperations', (req, res) => {
 app.post('/addOperation', (req, res) => {
     const accountId = req.body.accountId;
     const cash = req.body.cash;
-    (accountId && cash ? operationsRepository.addOperation(accountId, cash) : Promise.reject())
+    const comment = req.body.comment ? req.body.comment : '';
+    (accountId && cash ? operationsRepository.addOperation(accountId, cash, comment) : Promise.reject())
         .then(_success => res.json({ success: true }))
         .catch(err_message => res.status(400).json(err_message));
 });

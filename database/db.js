@@ -41,7 +41,7 @@ run('create table user(login text primary key, password text)')
 
 run('create table account(user_id integer, cash real)');
 
-run('create table operation(account_id integer, cash real)');
+run('create table operation(account_id integer, cash real, comment text)');
 
 module.exports = {
     run, all, get
