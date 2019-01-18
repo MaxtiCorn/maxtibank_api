@@ -4,7 +4,7 @@ const db = new sqlite.Database(':memory:');
 
 function run(query, params) {
     return new Promise((resolve, reject) => {
-        db.run(query, params, function(err) {
+        db.run(query, params, function (err) {
             if (err) {
                 reject(err.message);
             }
@@ -39,7 +39,8 @@ function get(query, params) {
 run('create table user(login text primary key, password text)')
     .then(() => run('insert into user(login, password) values("admin", "admin")'));
 
-run('create table account(user_id integer, cash real)');
+run('create table account(user_id integer, name text, cash real)')
+    .then(() => run('insert into account(user_id, name, cash) values(1, "cash", 3006.9)'));
 
 run('create table operation(account_id integer, cash real, comment text)');
 

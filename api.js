@@ -41,8 +41,9 @@ app.post('/reg', (req, res) => {
  */
 app.post('/addAccount', (req, res) => {
     const userId = req.body.userId;
+    const name = req.body.name;
     const cash = req.body.cash;
-    (userId && cash ? accountsRepository.addAccount(userId, cash) : Promise.reject())
+    (userId && name && cash ? accountsRepository.addAccount(userId, name, cash) : Promise.reject())
         .then(success => res.json({ id: success.lastID }))
         .catch(err_message => res.status(400).json(err_message));
 });
@@ -53,7 +54,7 @@ app.post('/addAccount', (req, res) => {
 app.get('/getAccounts', (req, res) => {
     const userId = req.query['userId'];
     (userId ? accountsRepository.getAccountsByUserId(userId) : Promise.reject())
-        .then(accounts => res.json(accounts.map((account) => { return { id: account.rowid, cash: account.cash } })))
+        .then(accounts => res.json(accounts.map((account) => { return { id: account.rowid, name: account.name, cash: account.cash } })))
         .catch(err_message => res.status(400).json(err_message));
 });
 
