@@ -22,7 +22,7 @@ app.post('/auth', (req, res) => {
     const password = req.body.password;
     (login && password ? usersRepository.getUserIdByLoginAndPassword(login, password) : Promise.reject())
         .then(result => res.json({ id: result.rowid }))
-        .catch(err_message => res.json(400, err_message));
+        .catch(err_message => res.status(400).json(err_message));
 });
 
 /**
@@ -33,7 +33,7 @@ app.post('/reg', (req, res) => {
     const password = req.body.password;
     (login && password ? usersRepository.addUser(login, password) : Promise.reject())
         .then(success => res.json({ id: success.lastID }))
-        .catch(err_message => res.json(400, err_message));
+        .catch(err_message => res.status(400).json(err_message));
 });
 
 /**
@@ -44,29 +44,29 @@ app.post('/addAccount', (req, res) => {
     const cash = req.body.cash;
     (userId && cash ? accountsRepository.addAccount(userId, cash) : Promise.reject())
         .then(success => res.json({ id: success.lastID }))
-        .catch(err_message => res.json(400, err_message));
+        .catch(err_message => res.status(400).json(err_message));
 });
 
 /**
  * Получение счетов пользователя
  */
 app.get('/getAccounts', (req, res) => {
-    const userId = req.params['userId'];
+    const userId = req.query['userId'];
     (userId ? accountsRepository.getAccountsByUserId(userId) : Promise.reject())
         .then(accounts => res.json(accounts.map((account) => { return { id: account.rowid, cash: account.cash } })))
-        .catch(err_message => res.json(400, err_message));
+        .catch(err_message => res.status(400).json(err_message));
 });
 
 /**
  * Получение операций пользователя
  */
 app.get('/getOperations', (req, res) => {
-    const userId = req.params['userId'];
-    const accountId = req.params['accountId'];
+    const userId = req.query['userId'];
+    const accountId = req.query['accountId'];
     (userId ? operationsRepository.getOperationsByUserId(userId) :
         accountId ? operationsRepository.getOperationsByAccountId(accountId) : Promise.reject())
         .then(result => res.json(result))
-        .catch(err_message => res.json(400, err_message));
+        .catch(err_message => res.status(400).json(err_message));
 });
 
 /**
@@ -77,7 +77,7 @@ app.post('/addOperation', (req, res) => {
     const cash = req.body.cash;
     (accountId && cash ? operationsRepository.addOperation(accountId, cash) : Promise.reject())
         .then(_success => res.json({ success: true }))
-        .catch(err_message => res.json(400, err_message));
+        .catch(err_message => res.status(400).json(err_message));
 });
 
 app.listen(process.env.PORT || 6969, () => { });
