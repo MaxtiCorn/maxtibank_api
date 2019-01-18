@@ -51,7 +51,7 @@ app.post('/addAccount', (req, res) => {
  * Получение счетов пользователя
  */
 app.get('/getAccounts', (req, res) => {
-    const userId = req.body.userId;
+    const userId = req.params['userId'];
     (userId ? accountsRepository.getAccountsByUserId(userId) : Promise.reject())
         .then(accounts => res.json(accounts.map((account) => { return { id: account.rowid, cash: account.cash } })))
         .catch(err_message => res.json(400, err_message));
@@ -61,8 +61,8 @@ app.get('/getAccounts', (req, res) => {
  * Получение операций пользователя
  */
 app.get('/getOperations', (req, res) => {
-    const userId = req.body.userId;
-    const accountId = req.body.accountId;
+    const userId = req.params['userId'];
+    const accountId = req.params['accountId'];
     (userId ? operationsRepository.getOperationsByUserId(userId) :
         accountId ? operationsRepository.getOperationsByAccountId(accountId) : Promise.reject())
         .then(result => res.json(result))
