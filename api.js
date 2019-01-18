@@ -1,18 +1,10 @@
-let express = require('express');
-let sqlite = require('sqlite3').verbose();
-let bodyParser = require('body-parser');
+const express = require('express');
+const bodyParser = require('body-parser');
+const usersRepository = require('./database/users_repository');
+const operationsRepository = require('./database/operations_repository');
+const accountsRepository = require('./database/accounts_repository');
 
-let db = new sqlite.Database(':memory:');
-let app = express();
-
-//Создание таблиц
-db.run('create table operations (sender text, reciever text, money integer)');
-db.run('create table users (login text primary key, password text)', (err) => {
-    if (!err) {
-        //Админский логин и пароль
-        db.run('insert into users(login, password) values("admin", "admin")');
-    }
-});
+const app = express();
 
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
@@ -26,71 +18,68 @@ app.use((_req, res, next) => {
  * Авторизация
  */
 app.post('/auth', (req, res) => {
-    db.all('select login, password from users', [], (err, rows) => {
-        success = false;
-        if (err) {
-            res.status(500);
-        }
-        if (rows) {
-            rows.forEach((row) => {
-                if (row.login === req.body.login && row.password === req.body.password) {
-                    success = true;
-                }
-            });
-        }
-        return res.json({ success: success });
-    });
+    const login = req.body.login;
+    const password = req.body.password;
+    (login && password ? usersRepository.getUserIdByLoginAndPassword(login, password) : Promise.reject())
+        .then(result => res.json({ id: result.rowid }))
+        .catch(err_message => res.status(400).json(err_message));
 });
 
 /**
  * Регистрация нового пользователя
  */
 app.post('/reg', (req, res) => {
-    let insertSript = db.prepare('insert into users(login, password) values(?, ?)');
-    insertSript.bind(req.body.login, req.body.password);
-    insertSript.run((err) => {
-        if (err) {
-            return res.status(500).json({ success: false });
-        }
-        return res.json({ success: true });
-    });
+    const login = req.body.login;
+    const password = req.body.password;
+    (login && password ? usersRepository.addUser(login, password) : Promise.reject())
+        .then(success => res.json({ id: success.lastID }))
+        .catch(err_message => res.status(400).json(err_message));
 });
 
 /**
- * Получение всех операций
+ * Добавление нового счета пользователя
  */
-app.get('/getOperations', (_req, res) => {
-    var result = [];
-    db.all('select sender, reciever, money from operations', [], (err, rows) => {
-        if (err) {
-            res.status(500);
-        }
-        if (rows) {
-            rows.forEach((row) => {
-                result.push({
-                    sender: row.sender,
-                    reciever: row.reciever,
-                    money: row.money
-                });
-            });
-        }
-        res.json(result);
-    });
+app.post('/addAccount', (req, res) => {
+    const userId = req.body.userId;
+    const name = req.body.name;
+    const cash = req.body.cash;
+    (userId && name && cash ? accountsRepository.addAccount(userId, name, cash) : Promise.reject())
+        .then(success => res.json({ id: success.lastID }))
+        .catch(err_message => res.status(400).json(err_message));
+});
+
+/**
+ * Получение счетов пользователя
+ */
+app.get('/getAccounts', (req, res) => {
+    const userId = req.query['userId'];
+    (userId ? accountsRepository.getAccountsByUserId(userId) : Promise.reject())
+        .then(accounts => res.json(accounts.map((account) => { return { id: account.rowid, name: account.name, cash: account.cash } })))
+        .catch(err_message => res.status(400).json(err_message));
+});
+
+/**
+ * Получение операций пользователя
+ */
+app.get('/getOperations', (req, res) => {
+    const userId = req.query['userId'];
+    const accountId = req.query['accountId'];
+    (userId ? operationsRepository.getOperationsByUserId(userId) :
+        accountId ? operationsRepository.getOperationsByAccountId(accountId) : Promise.reject())
+        .then(result => res.json(result))
+        .catch(err_message => res.status(400).json(err_message));
 });
 
 /**
  * Добавление новой операции
  */
 app.post('/addOperation', (req, res) => {
-    let insertSript = db.prepare('insert into operations(sender, reciever, money) values(?, ?, ?)');
-    insertSript.bind(req.body.sender, req.body.reciever, req.body.money);
-    insertSript.run((err) => {
-        if (err) {
-            return res.status(500).json({ success: false });
-        }
-        res.json({ success: true });
-    });
-
+    const accountId = req.body.accountId;
+    const cash = req.body.cash;
+    const comment = req.body.comment ? req.body.comment : '';
+    (accountId && cash ? operationsRepository.addOperation(accountId, cash, comment) : Promise.reject())
+        .then(_success => res.json({ success: true }))
+        .catch(err_message => res.status(400).json(err_message));
 });
 
 app.listen(process.env.PORT || 6969, () => { });
